@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>게시판</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .articles {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .hidden { display: none; }
+    </style>
+    <script>
+        async function fetchArticles() {
+            const response = await fetch('/articles');
+            const articles = await response.json();
+            const articlesList = document.getElementById('articles-list');
+            articlesList.innerHTML = '';
+            articles.forEach(article => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${article.idx} 제목: ${article.title}, 작성자: ${article.writer}, 작성시간: ${new Date(article.insert_time).toLocaleString()}`;
+                listItem.onclick = () => {
+                    showDetail(article.idx);
+                };
+                articlesList.appendChild(listItem);
+            });
+        }
+
+        async function showDetail(id) {
+            const response = await fetch(`/article/${id}`);
+            const article = await response.json();
+            document.getElementById('article-id').value = article.idx;
+            document.getElementById('article-title').value = article.title;
+            document.getElementById('article-writer').value = article.writer;
+            document.getElementById('article-content').value = article.content;
+            document.getElementById('list-section').classList.add('hidden');
+            document.getElementById('detail-section').classList.remove('hidden');
+        }
+
+        async function updateArticle() {
+            const id = document.getElementById('article-id').value;
+            const title = document.getElementById('article-title').value;
+            const writer = document.getElementById('article-writer').value;
+            const content = document.getElementById('article-content').value;
+            await fetch(`/article/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title, writer, content })
+            });
+            showList();
+        }
+
+        async function deleteArticle() {
+            const id = document.getElementById('article-id').value;
+            await fetch(`/article/${id}`, {
+                method: 'DELETE'
+            });
+            showList();
+        }
+
+        async function createArticle() {
+            const title = document.getElementById('new-title').value;
+            const writer = document.getElementById('new-writer').value;
+            const content = document.getElementById('new-content').value;
+            await fetch('/article/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title, writer, content })
+            });
+            showList();
+        }
+
+        function showList() {
+            document.getElementById('create-section').classList.add('hidden');
+            document.getElementById('detail-section').classList.add('hidden');
+            document.getElementById('list-section').classList.remove('hidden');
+            fetchArticles();
+        }
+
+        function showCreate() {
+            document.getElementById('list-section').classList.add('hidden');
+            document.getElementById('detail-section').classList.add('hidden');
+            document.getElementById('create-section').classList.remove('hidden');
+        }
+
+        window.onload = showList;
+    </script>
+</head>
+<body>
+    <h1>게시판</h1>
+
+    <div id="list-section" class="hidden">
+        <h2>게시글 목록</h2>
+        <ul id="articles-list"></ul>
+        <button onclick="showCreate()">새 게시글 작성</button>
+    </div>
+
+    <div id="detail-section" class="hidden">
+        <h2>게시글 상세</h2>
+        <form>
+            <input type="hidden" id="article-id">
+            <p><label>제목: <input type="text" id="article-title"></label><br></p>
+            <p><label>작성자: <input type="text" id="article-writer"></label><br></p>
+            <p><label>내용: <textarea id="article-content" rows="15" cols="70"></textarea></label><br></p>
+            <button type="button" onclick="updateArticle()">수정</button>
+            <button type="button" onclick="deleteArticle()">삭제</button>
+        </form>
+        <button onclick="showList()">목록으로 돌아가기</button>
+    </div>
+
+    <div id="create-section" class="hidden">
+        <h2>새 게시글 작성</h2>
+        <form>
+            <p><label>제목: <input type="text" id="new-title"></label><br></p>
+            <p><label>작성자: <input type="text" id="new-writer"></label><br></p>
+            <p><label>내용: <textarea id="new-content" rows="15" cols="70"></textarea></label><br></p>
+            <button type="button" onclick="createArticle()">작성</button>
+        </form>
+        <button onclick="showList()">목록으로 돌아가기</button>
+    </div>
+</body>
+</html>
